@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 import xgboost as xgb
 import streamlit as st
+import matplotlib.pyplot as plt
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Retrofit Strategy Tool", layout="wide")
+st.set_page_config(page_title="Retrofit Sensitivity Tool", layout="wide")
 
 @st.cache_data
 def load_and_train_model():
@@ -33,75 +34,72 @@ model, feature_names, original_df = load_and_train_model()
 
 st.title("🏢 Building Retrofit Strategy & ROI Analyzer")
 
-# --- SIDEBAR: SETTINGS ---
-st.sidebar.header("1. General Parameters")
-area = st.sidebar.slider("Living Area (sq ft)", 500, 4000, 1500)
+# --- SIDEBAR ---
+st.sidebar.header("1. Fixed Parameters")
 overall_q = st.sidebar.slider("Overall Quality (1-10)", 1, 10, 6)
 year_built = st.sidebar.number_input("Year of Construction", 1900, 2026, 2000)
 
-st.sidebar.markdown("---")
-st.sidebar.header("2. Current Condition (Baseline)")
+st.sidebar.header("2. Retrofit Scenario")
 h_current = st.sidebar.select_slider("Current Heating Quality", options=[1,2,3,4,5], value=2)
 k_current = st.sidebar.select_slider("Current Kitchen Quality", options=[1,2,3,4,5], value=2)
-
-st.sidebar.markdown("---")
-st.sidebar.header("3. Targeted Retrofit (Proposed)")
 h_target = st.sidebar.select_slider("Target Heating Quality", options=[1,2,3,4,5], value=4)
 k_target = st.sidebar.select_slider("Target Kitchen Quality", options=[1,2,3,4,5], value=4)
 
-st.sidebar.markdown("---")
-st.sidebar.header("4. Financials")
-renovation_cost = st.sidebar.number_input("Total Renovation Budget ($)", min_value=0, value=20000)
+st.sidebar.header("3. Financials")
+renovation_cost = st.sidebar.number_input("Renovation Budget ($)", min_value=0, value=20000)
+selected_area = st.sidebar.slider("Focus Area (sq ft)", 500, 4000, 1500)
 
-# --- CALCULATIONS ---
+# --- CALCULATION LOGIC ---
 base_vals = original_df[feature_names].mean().to_dict()
-base_vals.update({'Gr Liv Area': area, 'Overall Qual': overall_q, 'Year Built': year_built})
+base_vals.update({'Overall Qual': overall_q, 'Year Built': year_built})
 
-# Predicted Price: CURRENT
-current_data = base_vals.copy()
-current_data.update({'Heating QC': h_current, 'Kitchen Qual': k_current})
-price_current = model.predict(pd.DataFrame([current_data])[feature_names])[0]
+def get_profit(area_input):
+    temp_vals = base_vals.copy()
+    temp_vals['Gr Liv Area'] = area_input
+    
+    # Current
+    temp_vals.update({'Heating QC': h_current, 'Kitchen Qual': k_current})
+    p_curr = model.predict(pd.DataFrame([temp_vals])[feature_names])[0]
+    
+    # Target
+    temp_vals.update({'Heating QC': h_target, 'Kitchen Qual': k_target})
+    p_targ = model.predict(pd.DataFrame([temp_vals])[feature_names])[0]
+    
+    return (p_targ - p_curr) - renovation_cost
 
-# Predicted Price: AFTER RETROFIT
-target_data = base_vals.copy()
-target_data.update({'Heating QC': h_target, 'Kitchen Qual': k_target})
-price_target = model.predict(pd.DataFrame([target_data])[feature_names])[0]
+# Main Calculation for Selected Area
+current_profit = get_profit(selected_area)
 
-# ROI Logic
-value_increase = price_target - price_current
-net_profit = value_increase - renovation_cost
-
-# --- DASHBOARD DISPLAY ---
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("📍 Current Asset Status")
-    st.metric("Estimated Market Value", f"${price_current:,.0f}")
-    st.write(f"Heating Level: {h_current} | Kitchen Level: {k_current}")
-
-with col2:
-    st.subheader("🚀 Post-Retrofit Projection")
-    st.metric("Future Market Value", f"${price_target:,.0f}", delta=f"${value_increase:,.0f}")
-    st.write(f"Heating Level: {h_target} | Kitchen Level: {k_target}")
-
-st.markdown("---")
-st.header("💰 ROI & Feasibility Study")
-c1, c2, c3 = st.columns(3)
-
-c1.metric("Value Appreciation", f"${value_increase:,.0f}")
-c2.metric("Retrofit Cost", f"${renovation_cost:,.0f}")
-c3.metric("Net Profit / Loss", f"${net_profit:,.0f}")
-
-if net_profit > 0:
-    st.success(f"✅ HIGH FEASIBILITY: This strategy generates a net profit of ${net_profit:,.0f}.")
+# --- DASHBOARD ---
+st.header(f"Results for {selected_area} sq ft")
+c1, c2 = st.columns(2)
+if current_profit > 0:
+    c1.success(f"Profit: ${current_profit:,.0f}")
 else:
-    st.error(f"❌ LOW FEASIBILITY: Retrofit costs exceed the predicted value increase by ${abs(net_profit):,.0f}.")
+    c1.error(f"Loss: ${current_profit:,.0f}")
 
-# Chart Comparison
-st.bar_chart(pd.DataFrame({
-    'Condition': ['Current', 'Proposed'],
-    'Price ($)': [price_current, price_target]
-}).set_index('Condition'))
+# --- SENSITIVITY CHART: PROFIT VS AREA ---
+st.markdown("---")
+st.subheader("📈 Sensitivity Analysis: Profit vs. Building Size")
+st.write("This chart shows how the profitability of your retrofit strategy changes as the building area increases.")
+
+area_range = np.linspace(500, 4000, 20)
+profits = [get_profit(a) for a in area_range]
+
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(area_range, profits, color='teal', marker='o', linewidth=2)
+ax.axhline(0, color='red', linestyle='--') # Zero profit line
+ax.set_xlabel("Living Area (sq ft)")
+ax.set_ylabel("Net Profit ($)")
+ax.grid(True, alpha=0.3)
+
+# Highlight the selected point
+ax.scatter([selected_area], [current_profit], color='orange', s=100, zorder=5, label='Your Selection')
+ax.legend()
+
+st.pyplot(fig)
+
+st.info("💡 **Insight:** The red dashed line represents the 'Break-even Point'. If the curve falls below this line, the renovation cost is higher than the value added to the property.")
 
 
 # --- ADD THIS TO THE VERY END OF YOUR project_main.py ---
