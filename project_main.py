@@ -113,7 +113,7 @@ else:
 st.markdown("---")
 st.markdown("### 📈 Scenario Comparison: Asset Appreciation")
 comparison_df = pd.DataFrame({
-    'Scenario': ['Current Status', 'After Sustainable Retrofit'],
+    'Scenario': ['Current Status', 'After Retrofit'],
     'Property Value ($)': [predicted_price, upgraded_price]
 })
 st.bar_chart(data=comparison_df, x='Scenario', y='Property Value ($)')
