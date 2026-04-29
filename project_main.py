@@ -44,7 +44,7 @@ def load_and_train_model():
 model, feature_names, original_df = load_and_train_model()
 
 # --- 2. STREAMLIT UI SETUP ---
-st.title("🏗️ Building Retrofit ROI Predictor")
+st.title("🏗️ Building Retrofit ROI Predictor - Group 22")
 st.markdown("### Integrated Project Management Framework")
 
 st.sidebar.header("Building Parameters")
@@ -58,6 +58,18 @@ h_qual = st.sidebar.selectbox("Current Heating System Quality", [1,2,3,4,5], ind
                               format_func=lambda x: ['Poor','Fair','Typical','Good','Excellent'][x-1])
 k_qual = st.sidebar.selectbox("Current Kitchen/Interior Quality", [1,2,3,4,5], index=2, 
                               format_func=lambda x: ['Poor','Fair','Typical','Good','Excellent'][x-1])
+st.sidebar.markdown("---")
+st.sidebar.header("💰 Investment Details")
+renovation_cost = st.sidebar.number_input("Estimated Renovation Cost ($)", min_value=0, value=20000)
+
+profit = (upgraded_price - predicted_price) - renovation_cost
+roi = (profit / renovation_cost) * 100 if renovation_cost > 0 else 0
+
+st.markdown("### 📊 Financial Summary")
+c1, c2, c3 = st.columns(3)
+c1.metric("Value Increase", f"${upgraded_price - predicted_price:,.0f}")
+c2.metric("Net Profit", f"${profit:,.0f}")
+c3.metric("ROI", f"{roi:.1f}%")
 
 # --- 3. PREDICTION LOGIC (Ensuring Feature Alignment) ---
 # Create a baseline using the mean values of the dataset for the remaining 33 features
