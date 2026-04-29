@@ -2,23 +2,14 @@ import pandas as pd
 import numpy as np
 import xgboost as xgb
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.model_selection import train_test_split
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="Building Retrofit ROI Predictor", layout="wide")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Retrofit Strategy Tool", layout="wide")
 
-# --- 1. DATA LOADING & MODEL TRAINING ---
 @st.cache_data
 def load_and_train_model():
-    # Load the Ames Housing Dataset
     df = pd.read_csv('AmesHousing.csv')
-    
-    # Filter outliers to improve engineering model accuracy
     df = df[df['Gr Liv Area'] < 4000]
-    
-    # List of 38 key features for the predictive engine
     features = [
         'MS SubClass', 'Lot Frontage', 'Lot Area', 'Overall Qual', 'Overall Cond', 
         'Year Built', 'Year Remod/Add', 'Mas Vnr Area', 'BsmtFin SF 1', 'BsmtFin SF 2', 
@@ -29,96 +20,88 @@ def load_and_train_model():
         '3Ssn Porch', 'Screen Porch', 'Pool Area', 'Misc Val', 'Mo Sold', 'Yr Sold',
         'Heating QC', 'Kitchen Qual'
     ]
-    
-    # Map qualitative features to numerical values (Sustainability & Quality Metrics)
     qual_map = {'Ex': 5, 'Gd': 4, 'TA': 3, 'Fa': 2, 'Po': 1, 'None': 0}
     df['Heating QC'] = df['Heating QC'].map(qual_map).fillna(3)
     df['Kitchen Qual'] = df['Kitchen Qual'].map(qual_map).fillna(3)
-    
     X = df[features].fillna(0)
     y = df['SalePrice']
-    
-    # 80/20 Train-Test Split for scientific validation
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Initialize and train XGBoost Regressor
-    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
-    model.fit(X_train, y_train)
-    
+    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5)
+    model.fit(X, y)
     return model, features, df
 
-# Initialize Model and Data
 model, feature_names, original_df = load_and_train_model()
 
-# --- 2. USER INTERFACE (SIDEBAR) ---
-st.title("🏗️ Building Retrofit ROI Predictor")
-st.markdown("### Integrated Framework for Sustainable Building Management")
+st.title("🏢 Building Retrofit Strategy & ROI Analyzer")
 
-st.sidebar.header("📍 Property Parameters")
+# --- SIDEBAR: SETTINGS ---
+st.sidebar.header("1. General Parameters")
 area = st.sidebar.slider("Living Area (sq ft)", 500, 4000, 1500)
-overall_q = st.sidebar.slider("Overall Construction Quality (1-10)", 1, 10, 6)
+overall_q = st.sidebar.slider("Overall Quality (1-10)", 1, 10, 6)
 year_built = st.sidebar.number_input("Year of Construction", 1900, 2026, 2000)
 
-st.sidebar.header("🔧 Retrofit Scenarios")
-h_qual = st.sidebar.selectbox("Heating System Quality", [1,2,3,4,5], index=2, 
-                             format_func=lambda x: ['Poor','Fair','Typical','Good','Excellent'][x-1])
-k_qual = st.sidebar.selectbox("Kitchen/Interior Quality", [1,2,3,4,5], index=2, 
-                             format_func=lambda x: ['Poor','Fair','Typical','Good','Excellent'][x-1])
+st.sidebar.markdown("---")
+st.sidebar.header("2. Current Condition (Baseline)")
+h_current = st.sidebar.select_slider("Current Heating Quality", options=[1,2,3,4,5], value=2)
+k_current = st.sidebar.select_slider("Current Kitchen Quality", options=[1,2,3,4,5], value=2)
 
 st.sidebar.markdown("---")
-st.sidebar.header("💰 Investment Analysis")
-renovation_cost = st.sidebar.number_input("Estimated Retrofit Cost ($)", min_value=0, value=15000)
+st.sidebar.header("3. Targeted Retrofit (Proposed)")
+h_target = st.sidebar.select_slider("Target Heating Quality", options=[1,2,3,4,5], value=4)
+k_target = st.sidebar.select_slider("Target Kitchen Quality", options=[1,2,3,4,5], value=4)
 
-# --- 3. PREDICTION LOGIC ---
-# Create baseline using dataset averages for non-user-defined features
-base_values = original_df[feature_names].mean().to_dict()
-base_values.update({
-    'Gr Liv Area': area, 
-    'Overall Qual': overall_q, 
-    'Year Built': year_built,
-    'Heating QC': h_qual, 
-    'Kitchen Qual': k_qual
-})
+st.sidebar.markdown("---")
+st.sidebar.header("4. Financials")
+renovation_cost = st.sidebar.number_input("Total Renovation Budget ($)", min_value=0, value=20000)
 
-# Predict Current Market Value
-current_house = pd.DataFrame([base_values])[feature_names]
-predicted_price = model.predict(current_house)[0]
+# --- CALCULATIONS ---
+base_vals = original_df[feature_names].mean().to_dict()
+base_vals.update({'Gr Liv Area': area, 'Overall Qual': overall_q, 'Year Built': year_built})
 
-# Predict Post-Retrofit Value (Assuming upgrade to 'Excellent' - Level 5)
-upgrade_values = base_values.copy()
-upgrade_values['Heating QC'] = 5
-upgrade_values['Kitchen Qual'] = 5
-upgrade_house = pd.DataFrame([upgrade_values])[feature_names]
-upgraded_price = model.predict(upgrade_house)[0]
+# Predicted Price: CURRENT
+current_data = base_vals.copy()
+current_data.update({'Heating QC': h_current, 'Kitchen Qual': k_current})
+price_current = model.predict(pd.DataFrame([current_data])[feature_names])[0]
 
-# --- 4. FINANCIAL DASHBOARD ---
-profit = (upgraded_price - predicted_price) - renovation_cost
-roi = (profit / renovation_cost) * 100 if renovation_cost > 0 else 0
+# Predicted Price: AFTER RETROFIT
+target_data = base_vals.copy()
+target_data.update({'Heating QC': h_target, 'Kitchen Qual': k_target})
+price_target = model.predict(pd.DataFrame([target_data])[feature_names])[0]
+
+# ROI Logic
+value_increase = price_target - price_current
+net_profit = value_increase - renovation_cost
+
+# --- DASHBOARD DISPLAY ---
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("📍 Current Asset Status")
+    st.metric("Estimated Market Value", f"${price_current:,.0f}")
+    st.write(f"Heating Level: {h_current} | Kitchen Level: {k_current}")
+
+with col2:
+    st.subheader("🚀 Post-Retrofit Projection")
+    st.metric("Future Market Value", f"${price_target:,.0f}", delta=f"${value_increase:,.0f}")
+    st.write(f"Heating Level: {h_target} | Kitchen Level: {k_target}")
 
 st.markdown("---")
-st.markdown("### 📊 Financial & Sustainability Metrics")
-col1, col2, col3 = st.columns(3)
+st.header("💰 ROI & Feasibility Study")
+c1, c2, c3 = st.columns(3)
 
-col1.metric("Current Asset Value", f"${predicted_price:,.0f}")
-col2.metric("Post-Retrofit Value", f"${upgraded_price:,.0f}", delta=f"${upgraded_price - predicted_price:,.0f}")
-col3.metric("Net Investment Profit", f"${profit:,.0f}")
+c1.metric("Value Appreciation", f"${value_increase:,.0f}")
+c2.metric("Retrofit Cost", f"${renovation_cost:,.0f}")
+c3.metric("Net Profit / Loss", f"${net_profit:,.0f}")
 
-# Investment Recommendation with Visual Feedback
-if profit > 0:
-    st.success(f"✅ **Viable Project:** The predicted Return on Investment (ROI) is **{roi:.1f}%**.")
+if net_profit > 0:
+    st.success(f"✅ HIGH FEASIBILITY: This strategy generates a net profit of ${net_profit:,.0f}.")
 else:
-    st.error(f"⚠️ **High Risk:** The renovation costs exceed the value added. ROI: **{roi:.1f}%**.")
+    st.error(f"❌ LOW FEASIBILITY: Retrofit costs exceed the predicted value increase by ${abs(net_profit):,.0f}.")
 
-# --- 5. VISUAL COMPARISON ---
-st.markdown("---")
-st.markdown("### 📈 Scenario Comparison: Asset Appreciation")
-comparison_df = pd.DataFrame({
-    'Scenario': ['Current Status', 'After Retrofit'],
-    'Property Value ($)': [predicted_price, upgraded_price]
-})
-st.bar_chart(data=comparison_df, x='Scenario', y='Property Value ($)')
-
-st.info("Note: The 'After Retrofit' scenario assumes an upgrade to high-efficiency heating systems and premium interior materials.")
+# Chart Comparison
+st.bar_chart(pd.DataFrame({
+    'Condition': ['Current', 'Proposed'],
+    'Price ($)': [price_current, price_target]
+}).set_index('Condition'))
 
 
 # --- ADD THIS TO THE VERY END OF YOUR project_main.py ---
