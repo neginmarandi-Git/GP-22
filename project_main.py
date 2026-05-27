@@ -3,7 +3,6 @@ import numpy as np
 import xgboost as xgb
 import streamlit as st
 import matplotlib.pyplot as plt
-from weasyprint import HTML  
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Retrofit Sensitivity Tool", layout="wide")
@@ -114,18 +113,20 @@ if value_appreciation > MODEL_MAE:
         f"as it safely exceeds the model's Mean Absolute Error (**${MODEL_MAE:,.0f}**)."
     )
     verdict_text = "This project is financially viable and robust against market volatility."
+    alert_type = "success"
 else:
     statistical_reliability = (
         f"The predicted market value jump of **${value_appreciation:,.0f}** falls within the model's "
         f"uncertainty margin (MAE: **${MODEL_MAE:,.0f}**). The variance might be caused by baseline data noise rather than tangible value enhancement."
     )
     verdict_text = "High Financial Risk Detected due to uncertainty constraints."
+    alert_type = "error"
 
 if net_profit > 0:
     st.success(f"**Feasibility Analysis:** {verdict_text} {statistical_reliability} "
-               f"Executing this intervention strategy is expected to net an economic yield of **${net_profit:,.0f}**.")
+               f"Executing this intervention strategy is expected to net an economic yield of **...** ${net_profit:,.0f}.")
 else:
-    st.error(f"**Feasibility Analysis:** Negative economic yield detected (**${net_profit:,.0f}**). The financial "
+    st.error(f"**Feasibility Analysis:** Negative economic yield detected (**...** ${net_profit:,.0f}). The financial "
              f"cost of construction outweighs the anticipated real estate price growth. {statistical_reliability}")
 
 # --- SENSITIVITY CURVE MAP ---
@@ -148,115 +149,78 @@ ax.scatter([selected_area], [net_profit], color='#ff7f0e', s=120, zorder=5, labe
 ax.legend(frameon=True, facecolor='white', edgecolor='none')
 st.pyplot(fig)
 
-# --- 📄 PDF REPORT GENERATION ENGINE 📄 ---
+# --- 📄 NEW NATIVE REPORT GENERATOR (NO WEASYPRINT REQUIRED) 📄 ---
 st.sidebar.markdown("---")
 st.sidebar.header("📥 Project Reports & Deliverables")
 
-if st.sidebar.button("Generate Feasibility PDF Report"):
-    # Save the current plot temporarily to include in calculation data or records
-    plt.savefig('temp_sensitivity_curve.png', dpi=300, bbox_inches='tight')
-    
-    # Map numbers to readable strings for the report
+if st.sidebar.checkbox("Preview Executive Report"):
     labels = ['Poor', 'Fair', 'Typical', 'Good', 'Excellent']
     
-    html_template = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        @page {{ size: A4; margin: 20mm 15mm; }}
-        body {{ font-family: Arial, sans-serif; color: #2d3748; direction: ltr; line-height: 1.5; }}
-        .header {{ background-color: #1a365d; color: white; padding: 20px; border-radius: 4px; margin-bottom: 20px; }}
-        h1 {{ margin: 0; font-size: 18pt; }}
-        h2 {{ color: #2b6cb0; font-size: 14pt; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-top: 20px; }}
-        table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }}
-        th, td {{ border: 1px solid #cbd5e0; padding: 10px; text-align: center; }}
-        th {{ background-color: #f7fafc; font-weight: bold; }}
-        .metric-box {{ background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px; }}
-        .status-alert {{ padding: 12px; border-radius: 4px; background-color: #f0fff4; border-left: 4px solid #38a169; color: #276749; font-size: 10.5pt; }}
-        .status-danger {{ padding: 12px; border-radius: 4px; background-color: #fffaf0; border-left: 4px solid #dd6b20; color: #7b341e; font-size: 10.5pt; }}
-    </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>Building Retrofit Strategy & Feasibility Report</h1>
-            <p>Politecnico di Milano - Quantitative Design Optimization Support</p>
+    st.markdown("---")
+    st.markdown("## 📄 Executive Feasibility Report")
+    st.info("💡 **Tip for Presentation:** Press **Ctrl + P** (or **Cmd + P** on Mac) to save this clean report directly as a PDF via your browser!")
+    
+    # Render a clean, printable HTML report layout inside Streamlit using Markdown
+    report_html = f"""
+    <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #cbd5e0; border-radius: 6px; font-family: sans-serif; color: #2d3748;">
+        <div style="background-color: #1a365d; color: white; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: white; font-size: 18pt;">Building Retrofit Strategy & Feasibility Report</h2>
+            <p style="margin: 5px 0 0 0; font-size: 10.5pt; color: #e2e8f0;">Politecnico di Milano - Quantitative Design Optimization Support</p>
         </div>
         
-        <h2>1. Product Scope Specifications (Technical Matrix)</h2>
-        <table>
+        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">1. Product Scope Specifications (Technical Matrix)</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt;">
             <thead>
-                <tr>
-                    <th>Structural Feature</th>
-                    <th>Baseline Asset State (Current)</th>
-                    <th>Proposed Retrofit Strategy (Target)</th>
+                <tr style="background-color: #edf2f7;">
+                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Structural Feature</th>
+                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Baseline Asset State (Current)</th>
+                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Proposed Retrofit Strategy (Target)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Overall Structural Quality</strong></td>
-                    <td>Level {overall_q} / 10</td>
-                    <td>Level {overall_q} / 10 (Fixed Baseline)</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Overall Structural Quality</strong></td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">Level {overall_q} / 10</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">Level {overall_q} / 10 (Fixed Baseline)</td>
                 </tr>
                 <tr>
-                    <td><strong>Heating System Condition (QC)</strong></td>
-                    <td>{labels[h_current-1]} (Level {h_current})</td>
-                    <td>{labels[h_target-1]} (Level {h_target})</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Heating System Condition (QC)</strong></td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[h_current-1]} (Level {h_current})</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[h_target-1]} (Level {h_target})</td>
                 </tr>
                 <tr>
-                    <td><strong>Kitchen Material / Asset Quality</strong></td>
-                    <td>{labels[k_current-1]} (Level {k_current})</td>
-                    <td>{labels[k_target-1]} (Level {k_target})</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Kitchen Material Quality</strong></td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[k_current-1]} (Level {k_current})</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[k_target-1]} (Level {k_target})</td>
                 </tr>
                 <tr>
-                    <td><strong>Focus Asset Dimension (Scale)</strong></td>
-                    <td>{selected_area} sq ft</td>
-                    <td>{selected_area} sq ft</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Focus Asset Dimension (Scale)</strong></td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{selected_area} sq ft</td>
+                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{selected_area} sq ft</td>
                 </tr>
             </tbody>
         </table>
 
-        <h2>2. Investment Performance & Market Uncertainty Appraisal</h2>
-        <div class="metric-box">
-            <table style="border:none; margin:0;">
-                <tr style="border:none;">
-                    <td style="border:none; text-align:left;"><strong>Baseline Value:</strong> ${price_current:,.0f}</td>
-                    <td style="border:none; text-align:left;"><strong>Renovation Budget (CapEx):</strong> ${renovation_cost:,.0f}</td>
-                </tr>
-                <tr style="border:none;">
-                    <td style="border:none; text-align:left;"><strong>Target Value:</strong> ${price_target:,.0f}</td>
-                    <td style="border:none; text-align:left;"><strong>Net Profit Margin:</strong> ${net_profit:,.0f}</td>
-                </tr>
-                <tr style="border:none;">
-                    <td style="border:none; text-align:left;"><strong>Gross Added Value:</strong> ${value_appreciation:,.0f}</td>
-                    <td style="border:none; text-align:left; color:#e53e3e;"><strong>Model Uncertainty Baseline (MAE):</strong> ${MODEL_MAE:,.0f}</td>
-                </tr>
-            </table>
+        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">2. Investment Performance & Market Uncertainty Appraisal</h3>
+        <div style="background-color: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <p><strong>Estimated Asset Baseline Value:</strong> ${price_current:,.0f}</p>
+            <p><strong>Post-Retrofit Target Valuation:</strong> ${price_target:,.0f}</p>
+            <p><strong>Gross Added Value (Appreciation):</strong> ${value_appreciation:,.0f}</p>
+            <p><strong>Allocated Capital Expenditure (CapEx Budget):</strong> ${renovation_cost:,.0f}</p>
+            <p><strong>Net Projected Profit Margin:</strong> ${net_profit:,.0f}</p>
+            <p style="color: #e53e3e;"><strong>Model Uncertainty Baseline (MAE Error Buffer):</strong> ${MODEL_MAE:,.0f}</p>
         </div>
 
-        <div class="{'status-alert' if net_profit > 0 else 'status-danger'}">
+        <div style="padding: 15px; border-radius: 4px; margin-bottom: 20px; background-color: {'#f0fff4' if alert_type=='success' else '#fffaf0'}; border-left: 5px solid {'#38a169' if alert_type=='success' else '#dd6b20'}; color: {'#276749' if alert_type=='success' else '#7b341e'};">
             <strong>Project Manager Executive Summary:</strong> {verdict_text} {statistical_reliability}
         </div>
 
-        <h2>3. Strategic Recommendations for the Project Manager</h2>
-        <ul>
-            <li><strong>Scope Lock:</strong> If the appreciation safely circumvents the ${MODEL_MAE:,.0f} MAE, freeze product configurations and proceed to RIBA Stage 4 (Detailed Design).</li>
-            <li><strong>Risk Contingency:</strong> Maintain a minimum 10% contingency financial buffer in the cost baseline to shield the profit margin from unexpected material price hikes.</li>
-            <li><strong>Scale Control:</strong> Prioritize this specific retrofit intervention package on assets ranging near the optimal peaks shown on the dashboard sensitivity curve.</li>
+        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Strategic Decision-Support Recommendations</h3>
+        <ul style="padding-left: 20px; line-height: 1.6;">
+            <li><strong>Scope Lock Criterion:</strong> If value added safely exceeds the ${MODEL_MAE:,.0f} MAE benchmark, the current technical specifications are approved. Freeze configurations and transition to detailed structural blueprints.</li>
+            <li><strong>Risk Contingency Protocol:</strong> Maintain a minimum 10% cash contingency allowance in the baseline cost estimation. This isolates and safeguards your net profit against material supply chain spikes.</li>
+            <li><strong>Portfolio Scale Targeting:</strong> Prioritize deploying this architectural retrofit package exclusively on properties matching the optimal square footage zones highlighted on the dynamic sensitivity graph.</li>
         </ul>
-    </body>
-    </html>
+    </div>
     """
-    
-    # Compile HTML string to PDF using WeasyPrint
-    HTML(string=html_template).write_pdf("Retrofit_Feasibility_Report.pdf")
-    st.sidebar.success("✅ PDF Generated Successfully!")
-    
-    with open("Retrofit_Feasibility_Report.pdf", "rb") as file:
-        st.sidebar.download_button(
-            label="⬇️ Download PDF Report",
-            data=file,
-            file_name=f"Retrofit_Report_{selected_area}sqft.pdf",
-            mime="application/pdf"
-        )
+    st.markdown(report_html, unsafe_allow_html=True)
