@@ -105,7 +105,8 @@ c3.metric("Net Profit / Loss", f"${net_profit:,.0f}")
 c4.metric("Model Uncertainty (MAE)", f"${MODEL_MAE:,.0f}")
 
 # --- AUTOMATED TEXT ANALYSIS & MAE VALIDATION ---
-st.markdown("### 📝 Automated Engineering Assessment")
+st.markdown("---")
+st.subheader("📝 Automated Engineering Assessment")
 
 if value_appreciation > MODEL_MAE:
     statistical_reliability = (
@@ -113,25 +114,24 @@ if value_appreciation > MODEL_MAE:
         f"as it safely exceeds the model's Mean Absolute Error (**${MODEL_MAE:,.0f}**)."
     )
     verdict_text = "This project is financially viable and robust against market volatility."
-    alert_type = "success"
 else:
     statistical_reliability = (
         f"The predicted market value jump of **${value_appreciation:,.0f}** falls within the model's "
         f"uncertainty margin (MAE: **${MODEL_MAE:,.0f}**). The variance might be caused by baseline data noise rather than tangible value enhancement."
     )
     verdict_text = "High Financial Risk Detected due to uncertainty constraints."
-    alert_type = "error"
 
 if net_profit > 0:
     st.success(f"**Feasibility Analysis:** {verdict_text} {statistical_reliability} "
-               f"Executing this intervention strategy is expected to net an economic yield of **...** ${net_profit:,.0f}.")
+               f"Executing this intervention strategy is expected to net an economic yield of **${net_profit:,.0f}**.")
 else:
-    st.error(f"**Feasibility Analysis:** Negative economic yield detected (**...** ${net_profit:,.0f}). The financial "
+    st.error(f"**Feasibility Analysis:** Negative economic yield detected (**${net_profit:,.0f}**). The financial "
              f"cost of construction outweighs the anticipated real estate price growth. {statistical_reliability}")
 
 # --- SENSITIVITY CURVE MAP ---
 st.markdown("---")
 st.subheader("📈 Sensitivity Curve: Profit Margin vs. Building Scale")
+st.write("This simulation tests the economic viability of your chosen quality shift across different property sizes to find the break-even scale.")
 
 area_range = np.linspace(500, 4000, 30)
 simulated_profits = []
@@ -149,78 +149,39 @@ ax.scatter([selected_area], [net_profit], color='#ff7f0e', s=120, zorder=5, labe
 ax.legend(frameon=True, facecolor='white', edgecolor='none')
 st.pyplot(fig)
 
-# --- 📄 NEW NATIVE REPORT GENERATOR (NO WEASYPRINT REQUIRED) 📄 ---
-st.sidebar.markdown("---")
-st.sidebar.header("📥 Project Reports & Deliverables")
+# --- 🎯 NEW ADDITION: LIVE PLOT ANALYSIS & PM RECOMMENDATIONS 🎯 ---
+st.markdown("### 📋 Sensitivity Analysis & Strategic Project Management Decisions")
 
-if st.sidebar.checkbox("Preview Executive Report"):
-    labels = ['Poor', 'Fair', 'Typical', 'Good', 'Excellent']
-    
-    st.markdown("---")
-    st.markdown("## 📄 Executive Feasibility Report")
-    st.info("💡 **Tip for Presentation:** Press **Ctrl + P** (or **Cmd + P** on Mac) to save this clean report directly as a PDF via your browser!")
-    
-    # Render a clean, printable HTML report layout inside Streamlit using Markdown
-    report_html = f"""
-    <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #cbd5e0; border-radius: 6px; font-family: sans-serif; color: #2d3748;">
-        <div style="background-color: #1a365d; color: white; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
-            <h2 style="margin: 0; color: white; font-size: 18pt;">Building Retrofit Strategy & Feasibility Report</h2>
-            <p style="margin: 5px 0 0 0; font-size: 10.5pt; color: #e2e8f0;">Politecnico di Milano - Quantitative Design Optimization Support</p>
-        </div>
-        
-        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">1. Product Scope Specifications (Technical Matrix)</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt;">
-            <thead>
-                <tr style="background-color: #edf2f7;">
-                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Structural Feature</th>
-                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Baseline Asset State (Current)</th>
-                    <th style="border: 1px solid #cbd5e0; padding: 10px;">Proposed Retrofit Strategy (Target)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Overall Structural Quality</strong></td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">Level {overall_q} / 10</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">Level {overall_q} / 10 (Fixed Baseline)</td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Heating System Condition (QC)</strong></td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[h_current-1]} (Level {h_current})</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[h_target-1]} (Level {h_target})</td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Kitchen Material Quality</strong></td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[k_current-1]} (Level {k_current})</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{labels[k_target-1]} (Level {k_target})</td>
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;"><strong>Focus Asset Dimension (Scale)</strong></td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{selected_area} sq ft</td>
-                    <td style="border: 1px solid #cbd5e0; padding: 10px;">{selected_area} sq ft</td>
-                </tr>
-            </tbody>
-        </table>
+# 1. Curve Interpretation & Analysis text
+st.markdown("#### **Curve Interpretation & Market Analysis**")
+st.write(
+    f"The sensitivity curve maps how the project's net profit scales dynamically across different asset dimensions. "
+    f"Currently, your selected property scale is **{selected_area} sq ft**, yielding a net profit of **${net_profit:,.0f}**. "
+    f"The trend illustrates that executing this specific retrofit package (Heating upgrade to level {h_target} and Kitchen upgrade to level {k_target}) "
+    f"presents a non-linear return on investment. Upgrading smaller residential formats often drops below the red **Break-Even Boundary**, "
+    f"whereas mid-to-large spatial formats optimize capital utilization before facing high-end market saturation."
+)
 
-        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">2. Investment Performance & Market Uncertainty Appraisal</h3>
-        <div style="background-color: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-            <p><strong>Estimated Asset Baseline Value:</strong> ${price_current:,.0f}</p>
-            <p><strong>Post-Retrofit Target Valuation:</strong> ${price_target:,.0f}</p>
-            <p><strong>Gross Added Value (Appreciation):</strong> ${value_appreciation:,.0f}</p>
-            <p><strong>Allocated Capital Expenditure (CapEx Budget):</strong> ${renovation_cost:,.0f}</p>
-            <p><strong>Net Projected Profit Margin:</strong> ${net_profit:,.0f}</p>
-            <p style="color: #e53e3e;"><strong>Model Uncertainty Baseline (MAE Error Buffer):</strong> ${MODEL_MAE:,.0f}</p>
-        </div>
+# 2. Recommendations text based on MAE and Net Profit constraints
+st.markdown("#### **Strategic PM Recommendations & Next Steps**")
 
-        <div style="padding: 15px; border-radius: 4px; margin-bottom: 20px; background-color: {'#f0fff4' if alert_type=='success' else '#fffaf0'}; border-left: 5px solid {'#38a169' if alert_type=='success' else '#dd6b20'}; color: {'#276749' if alert_type=='success' else '#7b341e'};">
-            <strong>Project Manager Executive Summary:</strong> {verdict_text} {statistical_reliability}
-        </div>
+rec_1 = ""
+rec_2 = ""
+rec_3 = ""
 
-        <h3 style="color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Strategic Decision-Support Recommendations</h3>
-        <ul style="padding-left: 20px; line-height: 1.6;">
-            <li><strong>Scope Lock Criterion:</strong> If value added safely exceeds the ${MODEL_MAE:,.0f} MAE benchmark, the current technical specifications are approved. Freeze configurations and transition to detailed structural blueprints.</li>
-            <li><strong>Risk Contingency Protocol:</strong> Maintain a minimum 10% cash contingency allowance in the baseline cost estimation. This isolates and safeguards your net profit against material supply chain spikes.</li>
-            <li><strong>Portfolio Scale Targeting:</strong> Prioritize deploying this architectural retrofit package exclusively on properties matching the optimal square footage zones highlighted on the dynamic sensitivity graph.</li>
-        </ul>
-    </div>
-    """
-    st.markdown(report_html, unsafe_allow_html=True)
+if net_profit > 0 and value_appreciation > MODEL_MAE:
+    rec_1 = f"✔️ **Product Scope Approval (RIBA Stage 3/4 Transition):** The current technical specifications generate an value jump (**${value_appreciation:,.0f}**) that safely circumvents the system's **${MODEL_MAE:,.0f} MAE** uncertainty buffer. The product scope is validated; freeze current configurations and proceed to detailed execution designs."
+    rec_2 = f"⚠️ **Cost Baseline Protection:** Even though the project is highly viable, ensure a minimum **10% contingency financial buffer** is established in the cost baseline to protect the current profit margin against unpredictable material cost hikes during construction."
+    rec_3 = f"🎯 **Portfolio Scale Targeting:** Prioritize deploying this architectural and energy upgrade package on other assets within your portfolio that fit within the **1,500 to 2,500 sq ft** optimal efficiency window shown on the curve."
+elif net_profit > 0 and value_appreciation <= MODEL_MAE:
+    rec_1 = f"⚡ **High Uncertainty Alert:** Although a nominal profit of **${net_profit:,.0f}** is projected, the total value added (**${value_appreciation:,.0f}**) is lower than the model's standard error margin (**${MODEL_MAE:,.0f}**). The projected returns might stem from historical data noise rather than real market appreciation."
+    rec_2 = f"🔧 **Value Engineering Needed:** We recommend evaluating a **Product Scope Optimization**. Try adjusting the materials or lowering the target performance levels (e.g., target a 'Good' finish instead of 'Excellent') or negotiate a smaller procurement cost to widen the feasibility safety gap."
+    rec_3 = f"🛑 **Risk Mitigation:** Delay freezing the design requirements. Introduce a rigorous local market survey or micro-market audit to verify if buyers in this specific location actively pay a premium for these upgrades before allocating capital expenditure (CapEx)."
+else:
+    rec_1 = f"❌ **Negative Economic Yield Intervention:** The financial cost of construction (**${renovation_cost:,.0f}**) outweighs the anticipated market value appreciation (**${value_appreciation:,.0f}**), resulting in a net loss. This layout is economically unfeasible."
+    rec_2 = f"💡 **Design Pivot Required:** Do not proceed with the current retrofit strategy. You must lower the **Project Scope** cost or target properties that cross the **Break-Even Point** (the point where the blue curve intersects the red dashed line at $0 profit)."
+    rec_3 = f"🔄 **Resource Reallocation:** Reallocate the budget away from visual high-end amenities (Kitchen) toward lower-cost energy efficiency baselines, or shift investments to properties with a larger living area where the market cap accommodates premium renovations."
+
+st.info(rec_1)
+st.warning(rec_2)
+st.markdown(f"- {rec_3}")
